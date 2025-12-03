@@ -1,21 +1,30 @@
 import 'package:flutter/material.dart';
-import 'screens/splashscreen.dart';
-import 'screens/main_tabs.dart'; // <-- create this file next
+import 'package:provider/provider.dart';
+import 'package:vibe_ai/pages/music_library.dart';
+import 'package:vibe_ai/pages/theme_controller.dart';
 
 void main() {
-  runApp(const VibeAIApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ThemeController(),
+      child: const MyApp(),
+    ),
+  );
 }
 
-class VibeAIApp extends StatelessWidget {
-  const VibeAIApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final theme = Provider.of<ThemeController>(context);
+
     return MaterialApp(
-      title: "Vibe AI",
       debugShowCheckedModeBanner: false,
-      home: const SplashScreen(),
+      theme: theme.isDarkMode
+          ? ThemeData.dark()
+          : ThemeData.light(),
+      home: const LibraryPage(),
     );
   }
 }
-

@@ -21,15 +21,27 @@ class SongPage extends StatefulWidget {
   State<SongPage> createState() => _SongPageState();
 }
 
-class _SongPageState extends State<SongPage> {
+class _SongPageState extends State<SongPage>
+    with SingleTickerProviderStateMixin {
   final AudioPlayer player = AudioPlayer();
   bool isPlaying = false;
   Duration total = Duration.zero;
   Duration position = Duration.zero;
 
+  // ROTATION ANIMATION CONTROLLER
+  late AnimationController rotationController;
+
   @override
   void initState() {
     super.initState();
+
+    // initialize animation controller
+    rotationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 12),
+    );
+
+    rotationController.repeat();
 
     player.onDurationChanged.listen((d) => setState(() => total = d));
     player.onPositionChanged.listen((p) => setState(() => position = p));
@@ -38,6 +50,7 @@ class _SongPageState extends State<SongPage> {
   @override
   void dispose() {
     player.dispose();
+    rotationController.dispose();
     super.dispose();
   }
 
@@ -52,7 +65,7 @@ class _SongPageState extends State<SongPage> {
       ),
       body: Stack(
         children: [
-          // Full background
+          // BACKGROUND
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -68,27 +81,46 @@ class _SongPageState extends State<SongPage> {
               padding: const EdgeInsets.symmetric(horizontal: 22),
               child: Column(
                 children: [
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 20),
 
-                  // ALBUM ART
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(24),
-                    child: Image.network(
-                      widget.thumbnail,
-                      height: 300,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
+                  // ******** SPINNING DISC THUMBNAIL *********
+                  RotationTransition(
+                    turns: rotationController,
+                    child: Container(
+                      height: 260,
+                      width: 260,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.2),
+                          width: 4,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.4),
+                            blurRadius: 20,
+                            spreadRadius: 4,
+                          )
+                        ],
+                        image: DecorationImage(
+                          image: NetworkImage(widget.thumbnail),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
                     ),
                   ),
 
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 35),
 
-                  // Title + Artist
-                  Text(widget.title,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold)),
+                  Text(
+                    widget.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
 
                   const SizedBox(height: 6),
 
@@ -100,9 +132,7 @@ class _SongPageState extends State<SongPage> {
 
                   const Spacer(),
 
-                  // GLASS CONTROL AREA
                   _playerControls(context),
-
                   const SizedBox(height: 20),
                 ],
               ),
@@ -117,7 +147,7 @@ class _SongPageState extends State<SongPage> {
     return ClipRRect(
       borderRadius: BorderRadius.circular(28),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
         child: Container(
           padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
@@ -142,7 +172,6 @@ class _SongPageState extends State<SongPage> {
 
               const SizedBox(height: 12),
 
-              // PLAY CONTROLS
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -152,8 +181,10 @@ class _SongPageState extends State<SongPage> {
                     onTap: () async {
                       if (isPlaying) {
                         await player.pause();
+                        rotationController.stop();
                       } else {
                         await player.play(UrlSource(widget.audioUrl));
+                        rotationController.repeat();
                       }
                       setState(() => isPlaying = !isPlaying);
                     },

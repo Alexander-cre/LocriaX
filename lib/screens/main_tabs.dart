@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:vibe_ai/pages/music_library.dart';
+import 'package:vibe_ai/pages/settings_page.dart';
 
 class MainTabs extends StatefulWidget {
   const MainTabs({super.key});
@@ -14,8 +15,8 @@ class _MainTabsState extends State<MainTabs> {
   int index = 0; // Default page: Music Library
 
   final List<Widget> screens = const [
-    LibraryPage(),                     // MUSIC LIBRARY
-    Center(child: Text("Settings Page", style: TextStyle(color: Colors.white))),
+    LibraryPage(),                     
+    SettingsPage()
   ];
 
   @override
