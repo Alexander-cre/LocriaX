@@ -1,211 +1,229 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:audioplayers/audioplayers.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:provider/provider.dart';
+import 'theme_controller.dart';
 
 class SongPage extends StatefulWidget {
   final String title;
   final String artist;
   final String thumbnail;
   final String audioUrl;
+  final String albumArt;
+  final String imageUrl;
+  final String url;
 
   const SongPage({
     super.key,
     required this.title,
     required this.artist,
     required this.thumbnail,
-    required this.audioUrl, required String albumArt, required String imageUrl, required String url,
+    required this.audioUrl,
+    required this.albumArt,
+    required this.imageUrl,
+    required this.url, required String thumb, required bool isDark,
   });
 
   @override
   State<SongPage> createState() => _SongPageState();
 }
 
-class _SongPageState extends State<SongPage>
-    with SingleTickerProviderStateMixin {
-  final AudioPlayer player = AudioPlayer();
+class _SongPageState extends State<SongPage> {
   bool isPlaying = false;
-  Duration total = Duration.zero;
-  Duration position = Duration.zero;
-
-  // ROTATION ANIMATION CONTROLLER
-  late AnimationController rotationController;
-
-  @override
-  void initState() {
-    super.initState();
-
-    // initialize animation controller
-    rotationController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 12),
-    );
-
-    rotationController.repeat();
-
-    player.onDurationChanged.listen((d) => setState(() => total = d));
-    player.onPositionChanged.listen((p) => setState(() => position = p));
-  }
-
-  @override
-  void dispose() {
-    player.dispose();
-    rotationController.dispose();
-    super.dispose();
-  }
+  double sliderValue = 0.3;
+  int selectedTab = 0;
+  
+  get thumb => null;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Provider.of<ThemeController>(context);
+    final isDark = theme.isDarkMode;
+
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
       body: Stack(
         children: [
-          // BACKGROUND
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF09090F), Color(0xFF16161E)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
+          // ------------ BACKGROUND IMAGE BLUR ------------
+          Positioned.fill(
+            child: Image.network(
+              widget.thumbnail,
+              fit: BoxFit.cover,
             ),
           ),
+          Positioned.fill(
+            child:
+                BackdropFilter(filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30), child: Container(color: Colors.black.withOpacity(0.45))),
+          ),
 
+          // ------------ MAIN CONTENT ------------
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 22),
-              child: Column(
-                children: [
-                  const SizedBox(height: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // ------------ TOP SLIDER NAV ------------
+                // const SizedBox(height: 10),
+                // SizedBox(
+                //   height: 45,
+                //   child: ListView(
+                //     scrollDirection: Axis.horizontal,
+                //     padding: const EdgeInsets.symmetric(horizontal: 18),
+                //     children: [
+                //       _topTab("Now Playing", 0, isDark),
+                //       _topTab("Lyrics", 1, isDark),
+                //       _topTab("Related", 2, isDark),
+                //     ],
+                //   ),
+                // ),
 
-                  // ******** SPINNING DISC THUMBNAIL *********
-                  RotationTransition(
-                    turns: rotationController,
-                    child: Container(
-                      height: 260,
-                      width: 260,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.2),
-                          width: 4,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.4),
-                            blurRadius: 20,
-                            spreadRadius: 4,
-                          )
-                        ],
-                        image: DecorationImage(
-                          image: NetworkImage(widget.thumbnail),
-                          fit: BoxFit.cover,
+                const SizedBox(height: 30),
+
+                // ------------ ALBUM ART ------------
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(22),
+                    child: Image.network(
+                      thumb ?? '',
+                      height: 55,
+                      width: 55,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey,
+                          width: 55,
+                          height: 55,
+                          child: Icon(Icons.music_note, color: Colors.white),
+                        );
+                      },
+                    )
+
+                ),
+
+                const SizedBox(height: 25),
+
+                // ------------ TITLE + ARTIST ------------
+                Text(
+                  widget.title,
+                  style: TextStyle(
+                    color: isDark ? Colors.white : Colors.black,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  widget.artist,
+                  style: TextStyle(
+                    color: isDark ? Colors.white70 : Colors.black54,
+                    fontSize: 16,
+                  ),
+                ),
+
+                const SizedBox(height: 30),
+
+                // ------------ SLIDER ------------
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  child: Slider(
+                    value: sliderValue,
+                    onChanged: (value) {
+                      setState(() => sliderValue = value);
+                    },
+                    activeColor: isDark ? Colors.white : Colors.black,
+                    inactiveColor: isDark ? Colors.white24 : Colors.black26,
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                // ------------ PLAYER CONTROLS ------------
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 40),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Icon(Iconsax.previous5,
+                          size: 36,
+                          color: isDark ? Colors.white : Colors.black),
+
+                      // Play / Pause Button (Glass)
+                      GestureDetector(
+                        onTap: () =>
+                            setState(() => isPlaying = !isPlaying),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(50),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                            child: Container(
+                              padding: const EdgeInsets.all(18),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? Colors.white.withOpacity(0.12)
+                                    : Colors.black.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(50),
+                                border: Border.all(
+                                  color: isDark
+                                      ? Colors.white30
+                                      : Colors.black26,
+                                ),
+                              ),
+                              child: Icon(
+                                isPlaying ? Iconsax.pause : Iconsax.play,
+                                size: 36,
+                                color: isDark ? Colors.white : Colors.black,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+
+                      Icon(Iconsax.next5,
+                          size: 36,
+                          color: isDark ? Colors.white : Colors.black),
+                    ],
                   ),
+                ),
 
-                  const SizedBox(height: 35),
+                const SizedBox(height: 40),
 
-                  Text(
-                    widget.title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-
-                  const SizedBox(height: 6),
-
-                  Text(
-                    widget.artist,
-                    style: TextStyle(
-                        color: Colors.white.withOpacity(0.6), fontSize: 16),
-                  ),
-
-                  const Spacer(),
-
-                  _playerControls(context),
-                  const SizedBox(height: 20),
-                ],
-              ),
+                // ------------ BOTTOM SPACING ------------
+              ],
             ),
-          )
+          ),
         ],
       ),
     );
   }
 
-  Widget _playerControls(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(28),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          padding: const EdgeInsets.all(22),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.06),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.12),
-            ),
+  // -------------------------------------------------------------
+  // TOP TAB WIDGET
+  // -------------------------------------------------------------
+  Widget _topTab(String text, int index, bool isDark) {
+    bool active = selectedTab == index;
+
+    return GestureDetector(
+      onTap: () => setState(() => selectedTab = index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.only(right: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        decoration: BoxDecoration(
+          color: active
+              ? (isDark ? Colors.white : Colors.black)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(
+            color: isDark ? Colors.white60 : Colors.black54,
+            width: 1.2,
           ),
-          child: Column(
-            children: [
-              // SLIDER
-              Slider(
-                value: position.inSeconds.toDouble(),
-                max: total.inSeconds.toDouble(),
-                onChanged: (value) {
-                  player.seek(Duration(seconds: value.toInt()));
-                },
-                activeColor: Colors.white,
-                inactiveColor: Colors.white24,
-              ),
-
-              const SizedBox(height: 12),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Icon(Iconsax.previous, size: 34, color: Colors.white70),
-
-                  GestureDetector(
-                    onTap: () async {
-                      if (isPlaying) {
-                        await player.pause();
-                        rotationController.stop();
-                      } else {
-                        await player.play(UrlSource(widget.audioUrl));
-                        rotationController.repeat();
-                      }
-                      setState(() => isPlaying = !isPlaying);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
-                      ),
-                      child: Icon(
-                        isPlaying ? Icons.pause : Icons.play_arrow,
-                        size: 40,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-
-                  Icon(Iconsax.next, size: 34, color: Colors.white70),
-                ],
-              )
-            ],
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: active
+                ? (isDark ? Colors.black : Colors.white)
+                : (isDark ? Colors.white : Colors.black),
+            fontWeight: FontWeight.w600,
+            fontSize: 15,
           ),
         ),
       ),

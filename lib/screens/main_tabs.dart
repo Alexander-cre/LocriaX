@@ -1,8 +1,10 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:provider/provider.dart';
 import 'package:vibe_ai/pages/music_library.dart';
+import 'package:vibe_ai/pages/theme_controller.dart';
 import 'package:vibe_ai/pages/settings_page.dart';
+import 'package:iconsax/iconsax.dart';
 
 class MainTabs extends StatefulWidget {
   const MainTabs({super.key});
@@ -12,65 +14,65 @@ class MainTabs extends StatefulWidget {
 }
 
 class _MainTabsState extends State<MainTabs> {
-  int index = 0; // Default page: Music Library
-
-  final List<Widget> screens = const [
-    LibraryPage(),                     
-    SettingsPage()
-  ];
+  int _selectedIndex = 0;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true,
-      body: screens[index],
+    final theme = Provider.of<ThemeController>(context);
 
+    // Remove const, since LibraryPage/SettingsPage are not const anymore
+    final _pages = [
+      const LibraryTabsPage(selectMode: false,),
+      const SettingsPage(),
+    ];
+
+    return Scaffold(
+      extendBody: true, // floating nav
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _pages,
+      ),
       bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+        padding: const EdgeInsets.all(16.0),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(30),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
             child: Container(
-              height: 70,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.15),
-                  width: 1,
-                ),
+                color: theme.isDarkMode
+                    ? Colors.black.withOpacity(0.5)
+                    : Colors.white.withOpacity(0.5),
                 borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _navIcon(Iconsax.music, 0),      // MUSIC
-                  _navIcon(Iconsax.setting_2, 1),   // SETTINGS
+              child: BottomNavigationBar(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                currentIndex: _selectedIndex,
+                onTap: (index) => setState(() => _selectedIndex = index),
+                selectedItemColor: Colors.blueAccent,
+                unselectedItemColor:
+                    theme.isDarkMode ? Colors.white70 : Colors.black54,
+                items: const [
+                  BottomNavigationBarItem(
+                    icon: Icon(Iconsax.music),
+                    label: 'Library',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Iconsax.setting_2),
+                    label: 'Settings',
+                  ),
                 ],
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _navIcon(IconData icon, int i) {
-    final bool active = (i == index);
-
-    return GestureDetector(
-      onTap: () => setState(() => index = i),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: active ? Colors.white.withOpacity(0.18) : Colors.transparent,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          icon,
-          size: active ? 30 : 26,
-          color: active ? Colors.white : Colors.white54,
         ),
       ),
     );
